@@ -1,53 +1,63 @@
 import User from "../models/User.js";
 import { createSecretToken } from "../util/SecretToken.js";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-const Signup = async (req, res, next) => {
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
+const Signup = async (req, res) => {
   try {
     const { email, password, username, createdAt } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.json({ message: "User already exists" });
+      return res.status(409).json({ message: "User already exists" });
     }
     const user = await User.create({ email, password, username, createdAt });
     const token = createSecretToken(user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax"
-    });
-    console.log("BODY:", req.body);
+    res.cookie("token", token, getCookieOptions());
     res
       .status(201)
       .json({ message: "User signed in successfully", success: true, user });
-    next();
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Failed to sign up" });
   }
 };
-const Login = async (req, res, next) => {
+
+const Login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if(!email || !password ){
-      return res.json({message:'All fields are required'})
+      return res.status(400).json({message:'All fields are required'})
     }
     const user = await User.findOne({ email });
     if(!user){
-      return res.json({message:'Incorrect password or email' }) 
+      return res.status(401).json({message:'Incorrect password or email' }) 
     }
     const auth = await bcrypt.compare(password,user.password)
     if (!auth) {
-      return res.json({message:'Incorrect password or email' }) 
+      return res.status(401).json({message:'Incorrect password or email' }) 
     }
-     const token = createSecretToken(user._id);
-     res.cookie("token", token, {
-       withCredentials: true,
-       httpOnly: false,
-     });
-     res.status(201).json({ message: "User logged in successfully", success: true });
-     next()
+    const token = createSecretToken(user._id);
+    res.cookie("token", token, getCookieOptions());
+    res.status(200).json({
+      message: "User logged in successfully",
+      success: true,
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Failed to log in" });
   }
-}
+};
 export { Signup, Login as login };

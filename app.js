@@ -1,7 +1,5 @@
 import dotenv from 'dotenv';
-if(process.env.NODE_ENV !== 'production') {
-  dotenv.config();
-}
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
@@ -13,11 +11,31 @@ import reviewsRouter from './routes/reviews.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const DEFAULT_CLIENT_ORIGINS = [
+  'https://stay-x-gamma.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+const allowedOrigins = [
+  ...new Set(
+    (process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+      .concat(DEFAULT_CLIENT_ORIGINS)
+  ),
+];
+
 app.set("trust proxy", 1);
 app.use(
   cors({
-    origin: CLIENT_ORIGIN,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
@@ -35,7 +53,11 @@ app.use('/listings', listingsRouter);
 app.use('/auth', AuthRoute);
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.json({
+    status: 'ok',
+    message: 'Backend is running',
+    allowedOrigins,
+  });
 });
 
 mongoose
