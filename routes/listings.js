@@ -5,12 +5,13 @@ import listing from '../models/Listing.js';
 import Review from '../models/review.js';
 import  verifyUser  from "../Middlewares/AuthMiddleware.js";
 import multer from "multer";
+import { getServerBaseUrl, serializeListing } from "../util/url.js";
 
 const upload = multer({ dest: "uploads/" });
 router.get("/", async (req, res) => {
   try {
     const alllistings = await listing.find();
-    res.json(alllistings);
+    res.json(alllistings.map((item) => serializeListing(item, req)));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -27,7 +28,7 @@ router.get("/:id", async (req, res) => {
       .populate("owner");
     if (!listingById) return res.status(404).json({ message: "Not found" });
  
-    res.json(listingById);
+    res.json(serializeListing(listingById, req));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -43,12 +44,12 @@ router.post("/", verifyUser, upload.single("image"), async (req, res) => {
       ...req.body,
       price: req.body.price ? Number(req.body.price) : 0,
       image: req.file
-        ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+        ? `${getServerBaseUrl(req)}/uploads/${req.file.filename}`
         : undefined,
     });
     newListing.owner = req.user._id;
     await newListing.save();
-    res.status(201).json(newListing);
+    res.status(201).json(serializeListing(newListing, req));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -92,13 +93,13 @@ router.put("/:id", verifyUser, upload.single("image"), async (req, res) => {
         ...req.body,
         price: req.body.price ? Number(req.body.price) : 0,
         image: req.file
-          ? `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`
+          ? `${getServerBaseUrl(req)}/uploads/${req.file.filename}`
           : existingListing.image,
       },
       { new: true }
     );
 
-    res.json(updatedListing);
+    res.json(serializeListing(updatedListing, req));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

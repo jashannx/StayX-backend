@@ -3,6 +3,7 @@ import { login } from "../Controllers/AuthController.js";
 import verifyUser from "../Middlewares/AuthMiddleware.js";
 import express from "express";
 const router = express.Router();
+const isProduction = process.env.NODE_ENV === "production";
 
 const sendVerification = (req, res) => {
   res.json({
@@ -22,8 +23,8 @@ router.get("/verify", verifyUser, sendVerification);
 router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: true,
-    sameSite: "none",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
   });
   res.json({ message: "Logged out" });
 });
