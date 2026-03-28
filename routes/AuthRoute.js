@@ -19,4 +19,12 @@ router.post("/signup", Signup);
 router.post("/login", login);
 router.post("/verify", verifyUser, sendVerification);
 router.get("/verify", verifyUser, sendVerification);
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  res.json({ message: "Logged out" });
+});
 export default router;
