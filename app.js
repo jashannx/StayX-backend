@@ -15,6 +15,7 @@ const DEFAULT_CLIENT_ORIGINS = [
   'https://stay-x-gamma.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
+  'https://stayxnet.xyz'
 ];
 const allowedOrigins = [
   ...new Set(
