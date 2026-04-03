@@ -2,15 +2,22 @@ import User from "../models/User.js";
 import { createSecretToken } from "../util/SecretToken.js";
 import bcrypt from "bcrypt";
 
-const isProduction = process.env.NODE_ENV === "production";
+
 
 const getCookieOptions = () => ({
   httpOnly: true,
-  secure: true,
-  sameSite: "none",
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   maxAge: 7 * 24 * 60 * 60 * 1000,
 });
 
+const verifyController = (req, res) => {
+  return res.status(200).json({
+    status: true,
+    success: true,
+    user: req.user,
+  });
+};
 const Signup = async (req, res) => {
   try {
     const { email, password, username, createdAt } = req.body;
@@ -60,4 +67,4 @@ const Login = async (req, res) => {
     res.status(500).json({ message: "Failed to log in" });
   }
 };
-export { Signup, Login as login };
+export { Signup, Login as login ,verifyController};

@@ -3,13 +3,14 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import cookies from 'cookie-parser';
 import AuthRoute from './routes/AuthRoute.js';
+import cookieParser from "cookie-parser";
 
 import listingsRouter from './routes/listings.js';
 import reviewsRouter from './routes/reviews.js';
 
 const app = express();
+app.use(cookieParser());
 const PORT = process.env.PORT || 3001;
 const DEFAULT_CLIENT_ORIGINS = [
   'https://stay-x-gamma.vercel.app',
@@ -19,7 +20,8 @@ const DEFAULT_CLIENT_ORIGINS = [
 ];
 const allowedOrigins = [
   ...new Set(
-    (process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || '')
+    (process.env.CLIENT_ORIGINS || "")
+      
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean)
@@ -40,7 +42,6 @@ app.use(
     credentials: true,
   })
 );
-app.use(cookies());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
